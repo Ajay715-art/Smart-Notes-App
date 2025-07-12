@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Notes App</title>
+    <link rel="stylesheet" href="Notes.css" />
+  </head>
+  <body>
+    <div class="notes-app-container">
+      <header class="notes-header">
+        <h1>Smart Notes</h1>
+      </header>
+      <section class="note-input-section">
+        <form id="note-form">
+          <input id="note-title" type="text" placeholder="Title" required />
+          <textarea
+            id="note-body"
+            placeholder="Write your note..."
+            required
+          ></textarea>
+          <button type="submit">Save Note</button>
+        </form>
+      </section>
+      <section class="notes-controls">
+        <input id="search-bar" type="text" placeholder="Search notes..." />
+      </section>
+      <main id="notes-container" class="notes-grid"></main>
+    </div>
+    <script>
+      let notes = [];
+      let editingNoteId = null;
+      const notesContainer = document.getElementById("notes-container");
+      const noteForm = document.getElementById("note-form");
+      const titleInput = document.getElementById("note-title");
+      const bodyInput = document.getElementById("note-body");
+      const searchInput = document.getElementById("search-bar");
+      function saveNotes() {
+        localStorage.setItem("simpleNotes", JSON.stringify(notes));
+      }
+      function loadNotes() {
+        const data = localStorage.getItem("simpleNotes");
+        notes = data ? JSON.parse(data) : [];
+      }
+      function renderNotes(filter = "") {
+        notesContainer.innerHTML = "";
+        const filtered = notes.filter(
+          (note) =>
+            note.title.toLowerCase().includes(filter.toLowerCase()) ||
+            note.body.toLowerCase().includes(filter.toLowerCase())
+        );
+        filtered.forEach((note) => {
+          const card = document.createElement("div");
+          card.className = "note-card";
+          card.innerHTML = `
+          <div class="note-header">
+            <h3>${note.title}</h3>
+            <div class="note-actions">
+              <button onclick="editNote('${note.id}')">Edit</button>
+              <button onclick="deleteNote('${note.id}')">Delete</button>
+            </div>
+          </div>
+          <div class="note-body">${note.body}</div>`;
+          notesContainer.appendChild(card);
+        });
+      }
+      window.editNote = function (id) {
+        const note = notes.find((n) => n.id === id);
+        if (note) {
+          editingNoteId = id;
+          titleInput.value = note.title;
+          bodyInput.value = note.body;
+        }
+      };
+      window.deleteNote = function (id) {
+        notes = notes.filter((n) => n.id !== id);
+        saveNotes();
+        renderNotes(searchInput.value);
+      };
+      noteForm.onsubmit = function (e) {
+        e.preventDefault();
+        const title = titleInput.value.trim();
+        const body = bodyInput.value.trim();
+        if (!title && !body) return;
+        if (editingNoteId) {
+          const note = notes.find((n) => n.id === editingNoteId);
+          note.title = title;
+          note.body = body;
+          editingNoteId = null;
+        } else {
+          notes.unshift({
+            id: Date.now().toString(),
+            title,
+            body,
+          });
+        }
+        saveNotes();
+        renderNotes(searchInput.value);
+        noteForm.reset();
+      };
+      searchInput.oninput = function () {
+        renderNotes(searchInput.value);
+      };
+      loadNotes();
+      renderNotes();
+    </script>
+  </body>
+</html>
